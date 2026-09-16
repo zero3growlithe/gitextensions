@@ -1,5 +1,12 @@
 ![Git Extensions logo](https://cdn.rawgit.com/gitextensions/gitextensions/master/setup/assets/Logo/git-extensions-logo.svg)
 
+# About this fork
+
+This is a custom fork made by someone who happened to use a different Git client until now, but was forced to switch to a free alternative due to financial situation.
+I missed some small features that make Git'ting around a little easier and GitExtensions was the closest to what I needed, so I'm implementing those features one by one.
+
+This fork exclusively uses AI to implement all features. Code quality is not assured, nor supervised in any way. Explore at your own risk.
+
 # Git Extensions
 
 Git Extensions is a standalone Windows UI tool for managing git repositories.
