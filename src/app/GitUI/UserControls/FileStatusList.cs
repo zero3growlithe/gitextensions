@@ -5,6 +5,7 @@ using System.Reactive.Linq;
 using System.Reactive.Subjects;
 using System.Runtime.InteropServices;
 using System.Text.RegularExpressions;
+using System.Threading;
 using System.Windows.Automation;
 using GitCommands;
 using GitCommands.Git;
@@ -53,6 +54,7 @@ public sealed partial class FileStatusList : GitModuleControl
     private bool _isFileTreeMode = false;
     private bool _mouseEntered;
     private Rectangle _dragBoxFromMouseDown;
+    private HashSet<string>? _pendingExpandedFolderPaths;
     private IDisposable? _selectedIndexChangeSubscription;
     private IDisposable? _diffListSortSubscription;
     private DrawFailureState _drawFailureState = DrawFailureState.None;
@@ -1170,6 +1172,11 @@ public sealed partial class FileStatusList : GitModuleControl
             SetupUnifiedDiffListSorting();
         }
 
+        // Snapshot the folder expansion state BEFORE the tree is cleared: the loading
+        // routine runs first (SetDiffs*), so UpdateFileStatusListView's own snapshot
+        // would always see an empty tree and every refresh would re-expand folders.
+        _pendingExpandedFolderPaths = SnapshotExpandedFolderPaths();
+
         NoFiles.Visible = false;
         int top = GetFileStatusListTop(cboFilterComboBox.Visible);
         LoadingFiles.Top = top;
@@ -1208,7 +1215,11 @@ public sealed partial class FileStatusList : GitModuleControl
 
         SetFileStatusListVisibility(showNoFiles: !filesPresent && items.Count <= 1 && !_isFileTreeMode);
 
-        HashSet<string> expandedFolderPaths = SnapshotExpandedFolderPaths();
+        // Prefer the snapshot taken in FileStatusListLoading BEFORE the tree was cleared
+        // (SetDiffs* path). When absent, the tree still holds the previous state here
+        // (filter / in-place updates), so snapshot it now.
+        HashSet<string> expandedFolderPaths = Interlocked.Exchange(ref _pendingExpandedFolderPaths, null)
+            ?? SnapshotExpandedFolderPaths();
 
         try
         {
